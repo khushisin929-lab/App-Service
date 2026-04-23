@@ -9,7 +9,7 @@ const rateLimit = require("express-rate-limit");
 
 const app = express();
 
-// 🔒 RATE LIMIT (anti-spam)
+// 🔒 RATE LIMIT
 const limiter = rateLimit({
     windowMs: 60 * 1000,
     max: 15
@@ -55,7 +55,7 @@ app.post("/submit", async (req, res) => {
         return res.status(400).json({ msg: "Missing data" });
     }
 
-    // 🔐 CAPTCHA
+    // 🔐 CAPTCHA VERIFY
     try {
         const verifyURL = `https://www.google.com/recaptcha/api/siteverify?secret=${SECRET_KEY}&response=${captcha}`;
         const response = await axios.post(verifyURL);
@@ -64,7 +64,7 @@ app.post("/submit", async (req, res) => {
             return res.status(400).json({ msg: "⛔ CAPTCHA failed" });
         }
 
-    } catch {
+    } catch (err) {
         return res.status(500).json({ msg: "Captcha error" });
     }
 
@@ -84,30 +84,34 @@ app.post("/submit", async (req, res) => {
     clients.push(newClient);
     writeFile(CLIENT_FILE, clients);
 
-    // 📲 TELEGRAM
+    // 📲 TELEGRAM FIXED
     try {
+
         const message = `
-🔥 New Client
+🔥 *New Client*
 
-👤 ${name}
-📧 ${email}
-📱 ${mobile}
+👤 *Name:* ${name || "N/A"}
+📧 *Email:* ${email || "N/A"}
+📱 *Mobile:* ${mobile || "N/A"}
 
-🛠 ${service}
-🔐 ${security}
-🔑 ${ownership}
-📢 ${ads}
+🛠 *Service:* ${service || "N/A"}
+🔐 *Security:* ${security || "N/A"}
+🔑 *Ownership:* ${ownership || "N/A"}
+📢 *Ads:* ${ads || "N/A"}
 
-⏰ ${newClient.time}
+⏰ *Time:* ${newClient.time}
 `;
+
+        console.log("Sending to Telegram:\n", message); // debug
 
         await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             chat_id: CHAT_ID,
-            text: message
+            text: message,
+            parse_mode: "Markdown"
         });
 
     } catch (err) {
-        console.log("Telegram Error:", err.message);
+        console.log("Telegram Error:", err.response?.data || err.message);
     }
 
     res.json({ msg: "✅ Submitted Successfully" });
@@ -147,6 +151,7 @@ app.get("/clients", (req, res) => {
     res.json(clients);
 });
 
+// START SERVER
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
