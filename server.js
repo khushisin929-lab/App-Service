@@ -7,15 +7,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 CAPTCHA SECRET KEY
-const SECRET_KEY = "6LeyHsYsAAAAAP6k0DY5V1LuLH9M_fO-yRLCYqTG";
-
-// 🤖 TELEGRAM BOT DETAILS
-const BOT_TOKEN = "8699241488:AAFCvPKlhpPIMXygpY67vVzRAKMuaJtWCig";
-const CHAT_ID = "7963939076";
+// 🔐 ENV VARIABLES (Railway / .env से आएंगे)
+const SECRET_KEY = process.env.SECRET_KEY;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID;
 
 // TEMP STORAGE
 let clients = [];
+
+// ROOT
+app.get("/", (req, res) => {
+    res.send("✅ Server Running");
+});
 
 // SUBMIT API
 app.post("/submit", async (req, res) => {
@@ -28,7 +31,6 @@ app.post("/submit", async (req, res) => {
     // 🔐 CAPTCHA VERIFY
     try {
         const verifyURL = `https://www.google.com/recaptcha/api/siteverify?secret=${SECRET_KEY}&response=${data.captcha}`;
-
         const response = await axios.post(verifyURL);
 
         if (!response.data.success) {
